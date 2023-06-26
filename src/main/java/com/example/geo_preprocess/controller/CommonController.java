@@ -8,6 +8,7 @@ import com.example.geo_preprocess.service.GeoPreProService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/")
@@ -36,10 +37,8 @@ public class CommonController {
      */
     @PostMapping("/Projecttion")
     public ResponseData changeCoor(@RequestBody CoordinateParam coordinateParam) {
-
-        String path = geoPreProService.changeCoordination(coordinateParam);
-
-        return ResponseData.success(path);
+        Map<String, String> result = geoPreProService.changeCoordination(coordinateParam);
+        return ResponseData.success(result);
     }
 
     /**
@@ -50,8 +49,8 @@ public class CommonController {
      */
     @PostMapping("/Resample")
     public ResponseData resample(@RequestBody ResampleParam resampleParam) {
-        String path = geoPreProService.resampleImage(resampleParam);
-        return ResponseData.success(path);
+        Map<String, Integer> result = geoPreProService.resampleImage(resampleParam);
+        return ResponseData.success(result);
     }
 
 }
