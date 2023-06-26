@@ -11,7 +11,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/imagePreprocessing")
 public class CommonController {
 
     @Resource
@@ -25,8 +25,13 @@ public class CommonController {
      */
     @GetMapping("/MetaData")
     public ResponseData getMetaData(String imagePath) {
-        TiffMetaData data = geoPreProService.getMetadata(imagePath);
-        return ResponseData.success(data);
+        try {
+            TiffMetaData data = geoPreProService.getMetadata(imagePath);
+            return ResponseData.success(data);
+        } catch (Exception e) {
+            //如果文件无法读取，返回原因
+            return ResponseData.error(e.getCause().toString());
+        }
     }
 
     /**
