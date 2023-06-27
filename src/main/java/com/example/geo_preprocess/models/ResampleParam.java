@@ -9,8 +9,14 @@ import lombok.Data;
 @Data
 public class ResampleParam {
 
+    /**
+     * 文件路径
+     */
     private String filePath;
 
+    /**
+     * 输出图像路径
+     */
     private String outPath;
 
     /**

@@ -5,54 +5,21 @@ import com.example.geo_preprocess.models.ResampleParam;
 import com.example.geo_preprocess.models.TiffMetaData;
 import com.example.geo_preprocess.service.GeoPreProService;
 import com.example.geo_preprocess.tools.ExeExecution;
-import com.example.geo_preprocess.tools.ResampleEum;
-import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
-import org.gdal.gdal.Driver;
 import org.gdal.gdal.gdal;
-import org.gdal.gdalconst.gdalconst;
 import org.gdal.osr.SpatialReference;
 import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.GridCoverageFactory;
-import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.coverage.grid.io.AbstractGridFormat;
-import org.geotools.coverage.grid.io.GridFormatFinder;
-import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.coverage.processing.Operations;
-import org.geotools.data.DataSourceException;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.gce.geotiff.GeoTiffFormat;
 import org.geotools.gce.geotiff.GeoTiffReader;
 import org.geotools.gce.geotiff.GeoTiffWriter;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.Envelope2D;
-import org.geotools.geometry.jts.JTS;
-import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.referencing.operation.transform.AffineTransform2D;
 import org.geotools.util.factory.Hints;
-import org.opengis.coverage.Coverage;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.geometry.DirectPosition;
-import org.opengis.geometry.Envelope;
-import org.opengis.parameter.GeneralParameterValue;
-import org.opengis.parameter.Parameter;
-import org.opengis.parameter.ParameterValueGroup;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform2D;
-import org.opengis.referencing.operation.TransformException;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.opengis.coverage.grid.GridCoverageReader;
 
-import java.awt.geom.AffineTransform;
-import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.*;
 
 @Service
@@ -88,7 +55,7 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         tiffMetaData.setModificationTime(new Date(modifiedTime));
         // 获取名称
         tiffMetaData.setImageName(file.getName());
-        Dataset imageSet = gdal.Open("E:\\data\\tiff_test\\chengnanjiedao0.tif");
+        Dataset imageSet = gdal.Open(imagePath);
         //获取空间仿射变换参数
         tiffMetaData.setAffineTransformation(imageSet.GetGeoTransform());
 
@@ -115,7 +82,6 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         //获取元数据坐标系
         tiffMetaData.setProjection(coordinateSystem);
 
-
         return tiffMetaData;
     }
 
@@ -128,24 +94,56 @@ public class GeoPreProServiceImpl implements GeoPreProService {
      */
     @Override
     public Map<String, String> changeCoordination(CoordinateParam param) {
+
+        //GDAL代码，存在与postgis冲突的环境变量
         // 打开源图像数据集
-        Dataset sourceDataset = gdal.Open(param.getFilePath(), gdalconst.GA_ReadOnly);
-        SpatialReference spatialRef = new SpatialReference(sourceDataset.GetProjection());
-        // 获取坐标系名称
-        String coordinateSystem = spatialRef.GetAttrValue("DATUM");
-        // 获取EPSG代码
-        String sourceEPSG = "EPSG:" + spatialRef.GetAttrValue("AUTHORITY", 1);
+//        Dataset sourceDataset = gdal.Open(param.getFilePath(), gdalconst.GA_ReadOnly);
+//        SpatialReference spatialRef = new SpatialReference(sourceDataset.GetProjection());
+//        // 获取坐标系名称
+//        String coordinateSystem = spatialRef.GetAttrValue("DATUM");
+//        // 获取EPSG代码
+//        String sourceEPSG = "EPSG:" + spatialRef.GetAttrValue("AUTHORITY", 1);
+//
+//        //实例化exe文件的执行对象
+//        ExeExecution exeExecution = new ExeExecution();
+//        exeExecution.doChangeCoordinate(param.getFilePath(), param.getOutPath(), sourceEPSG, param.getTargetEPSG());
+//
+//        File file = new File(param.getFilePath());
+        File file = new File(param.getFilePath());
+        try {
+            GeoTiffReader reader = new GeoTiffReader(file, new Hints(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, Boolean.TRUE));
+            GridCoverage2D coverage2D = reader.read(null);
+            //获取当前坐标系
+            CoordinateReferenceSystem crs = coverage2D.getCoordinateReferenceSystem2D();
+            System.out.println(String.format("原坐标系：%s", crs.getName()));
+            final CoordinateReferenceSystem WGS = CRS.decode("EPSG:3857");
+            //执行重投影
+            GridCoverage2D new2D = (GridCoverage2D) Operations.DEFAULT.resample(coverage2D, WGS);
 
-        //实例化exe文件的执行对象
-        ExeExecution exeExecution = new ExeExecution();
-        exeExecution.doChangeCoordinate(param.getFilePath(), param.getOutPath(), sourceEPSG, param.getTargetEPSG());
+            //获取重投影后的坐标信息
+            CoordinateReferenceSystem newCrs = new2D.getCoordinateReferenceSystem2D();
+            System.out.println(String.format("新坐标系：%s", newCrs.getName()));
+            // 指定保存路径和文件名
+            File outputFile = new File(file.getParent() + "\\" + WGS.getName().toString() + ".tif");
 
-        Map<String, String> result = new HashMap<>();
-        result.put("sourceCoordinateSystem", coordinateSystem);
-        result.put("sourceEPSG", sourceEPSG);
-        result.put("newEPSG", param.getTargetEPSG());
+            // 获取 GridCoverageWriter
+            GeoTiffWriter writer = new GeoTiffWriter(outputFile);
 
-        return result;
+            // 设置输出的坐标参考系统为重投影后的坐标参考系统
+            writer.write(new2D, null);
+            System.out.println("重投影数据已保存为 GeoTIFF 文件：" + outputFile.getAbsolutePath());
+
+            // 关闭写入器
+            writer.dispose();
+            Map<String, String> result = new HashMap<>();
+            result.put("sourceCoordinateSystem", crs.getName().toString());
+            result.put("newCoordinateSystem", WGS.getName().toString());
+
+            return result;
+        } catch (IOException | FactoryException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     /**
