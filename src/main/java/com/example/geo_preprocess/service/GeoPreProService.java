@@ -6,6 +6,7 @@ import com.example.geo_preprocess.models.TiffMetaData;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+
 public interface GeoPreProService {
 
     /**
@@ -31,5 +32,14 @@ public interface GeoPreProService {
      * @return 采样后文件路径
      */
     Map<String, String> resampleImage(ResampleParam param);
+
+    /**
+     * 格式转换方法
+     *
+     * @param filePath     文件路径
+     * @param targetFormat 目标格式
+     * @return 返回结果
+     */
+    Map<String, String> changeFormat(String filePath, String outputPath, String targetFormat);
 
 }

@@ -30,7 +30,6 @@ public class GeoPreprocessApplication {
                         "External: \thttp://" + ip + ":" + port + path + "/\n\t" +
                         "------------------------------------------------------------");
 
-
     }
 
 }

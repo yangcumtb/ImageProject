@@ -5,11 +5,12 @@ import com.example.geo_preprocess.models.ResampleParam;
 import com.example.geo_preprocess.models.ResponseData;
 import com.example.geo_preprocess.models.TiffMetaData;
 import com.example.geo_preprocess.service.GeoPreProService;
+import com.example.geo_preprocess.service.impl.GeoPreProServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
+import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -87,4 +88,38 @@ public class CommonController {
         return ResponseData.success(result);
     }
 
+    /**
+     * 转换影像格式，需要支持的格式：
+     *
+     * @param filePath     文件路径
+     * @param outputPath   输出路径
+     * @param targetFormat 目标格式
+     * @return
+     */
+    @PostMapping("/ChangeFormat")
+    public ResponseData changeFormat(
+            @RequestParam("filePath") String filePath,
+            @RequestParam("outputPath") String outputPath,
+            @RequestParam("targetFormat") String targetFormat
+    ) {
+        File out = new File(outputPath);
+        File input = new File(filePath);
+        if (!out.exists()) {
+            out.mkdir();
+        }
+
+        if (GeoPreProServiceImpl.getFileExtension(input).equals(".gif")) {
+            //对于gif文件，只能保存为png或者jpg
+            outputPath = outputPath + input.getName();
+            String oupath = GeoPreProServiceImpl.gifChange(filePath, outputPath, targetFormat);
+            if (oupath.equals("")) {
+                return ResponseData.error("转换失败！");
+            }
+            Map<String, String> res = new HashMap<>();
+            res.put("outputPath", oupath);
+            return ResponseData.success(res);
+        }
+        geoPreProService.changeFormat(filePath, outputPath, targetFormat);
+        return ResponseData.success();
+    }
 }

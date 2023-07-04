@@ -5,6 +5,7 @@ import com.example.geo_preprocess.models.ResampleParam;
 import com.example.geo_preprocess.models.TiffMetaData;
 import com.example.geo_preprocess.service.GeoPreProService;
 import com.example.geo_preprocess.tools.ExeExecution;
+import com.example.geo_preprocess.tools.FormatEum;
 import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
@@ -12,7 +13,10 @@ import org.gdal.gdalconst.gdalconst;
 import org.gdal.osr.SpatialReference;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -105,8 +109,7 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         String sourceEPSG = "EPSG:" + spatialRef.GetAttrValue("AUTHORITY", 1);
 
         //实例化exe文件的执行对象
-        ExeExecution exeExecution = new ExeExecution();
-        exeExecution.doChangeCoordinate(param.getFilePath(), param.getOutPath(), sourceEPSG, param.getTargetEPSG());
+        ExeExecution.doChangeCoordinate(param.getFilePath(), param.getOutPath(), sourceEPSG, param.getTargetEPSG());
 
         Map<String, String> result = new HashMap<>();
         result.put("sourceCoordinateSystem", coordinateSystem);
@@ -133,8 +136,7 @@ public class GeoPreProServiceImpl implements GeoPreProService {
     public Map<String, String> resampleImage(ResampleParam param) {
 
         //实例化exe文件的执行对象
-        ExeExecution exeExecution = new ExeExecution();
-        exeExecution.doResampleOperation(param.getFilePath(), param.getOutPath(), param.getReSizeX(), param.getReSizeY(), param.getResampleMethod());
+        ExeExecution.doResampleOperation(param.getFilePath(), param.getOutPath(), param.getReSizeX(), param.getReSizeY(), param.getResampleMethod());
         //设置返回值参数
         Map<String, String> result = new HashMap<>();
         result.put("newWidth", String.valueOf(param.getReSizeX()));
@@ -144,6 +146,25 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         return result;
     }
 
+    /**
+     * 格式转换方法
+     *
+     * @param filePath     文件路径
+     * @param targetFormat 目标格式
+     * @return 返回结果
+     */
+    @Override
+    public Map<String, String> changeFormat(String filePath, String outputPath, String targetFormat) {
+
+        Dataset imageSet = gdal.Open(filePath);
+        File file = new File(filePath);
+        String ouptPath = ExeExecution.doChangeFormat(filePath, outputPath, file.getName(), targetFormat, FormatEum.getSuffixValue(targetFormat), imageSet.getRasterCount());
+        imageSet.delete();
+        Map<String, String> res = new HashMap<>();
+        res.put("outputPath", ouptPath);
+        return res;
+    }
+
 
     /**
      * 获取文件后缀
@@ -151,7 +172,7 @@ public class GeoPreProServiceImpl implements GeoPreProService {
      * @param file 文件
      * @return 后缀
      */
-    private static String getFileExtension(File file) {
+    public static String getFileExtension(File file) {
         String fileName = file.getName();
         int dotIndex = fileName.lastIndexOf('.');
         if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
@@ -214,4 +235,33 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         return pattn.toString();
     }
 
+
+    /**
+     * gif图片转换要求
+     *
+     * @param targetFormat 目标格式
+     */
+    public static String gifChange(String inputpath, String outputFilePath, String targetFormat) {
+        try {
+            // 读取GIF文件
+            BufferedImage gifImage = ImageIO.read(new File(inputpath));
+
+            // 创建空白的目标图像
+            BufferedImage outputImage = new BufferedImage(gifImage.getWidth(), gifImage.getHeight(),
+                    BufferedImage.TYPE_INT_RGB);
+
+            // 将目标图像保存为PNG或JPEG
+            if (targetFormat.equals(FormatEum.PNG.getName())) {
+                ImageIO.write(outputImage, "png", new File(outputFilePath + ".png"));
+                return outputFilePath + ".png";
+            } else if (targetFormat.equals(FormatEum.JPEG.getName())) {
+                ImageIO.write(outputImage, "jpg", new File(outputFilePath + ".jpg"));
+                return outputFilePath + ".jpg";
+            }
+            System.out.println("转换完成！");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
 }
