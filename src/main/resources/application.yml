@@ -1,0 +1,10 @@
+#默认激活的文件
+spring:
+  profiles:
+    active: dev
+#mybaits配置
+server:
+  port: 9071
+#mybatis:
+#  type-aliases-package: com.atlas.atlasmian.bean
+#  mapper-locations: classpath:mybatis/*/*Mapper.xml

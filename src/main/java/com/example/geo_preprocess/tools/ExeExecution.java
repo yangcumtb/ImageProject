@@ -1,13 +1,10 @@
 package com.example.geo_preprocess.tools;
 
-import org.springframework.scheduling.annotation.Async;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Map;
-import java.util.Objects;
+
 
 public class ExeExecution {
 
@@ -18,12 +15,12 @@ public class ExeExecution {
      * @param height     采样高度
      * @param method     采样方法
      */
-    @Async
-    public void doResampleOperation(String inputFile, String outputFile, int width, int height, String method) {
+//    @Async
+    public static void doResampleOperation(String inputFile, String outputFile, int width, int height, String method) {
         try {
             // 设置.exe文件路径
-            String exePath = "D:\\IdeaProjects\\geo_preprocess\\src\\main\\resources\\lib\\gdalwarp.exe";
-
+            //linux系统路径
+            String exePath = "gdalwarp";
             // 设置命令参数
             String[] command = {
                     exePath,
@@ -37,6 +34,7 @@ public class ExeExecution {
             };
 
             // 创建进程并执行命令
+            System.out.println("正在执行重采样，采样方式：" + method);
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             Process process = processBuilder.start();
 
@@ -73,7 +71,8 @@ public class ExeExecution {
     public void doChangeCoordinate(String inputPath, String outputPath, String sourceEPSG, String targetEPSG) {
         try {
             // 设置.exe文件路径
-            String exePath = "D:\\IdeaProjects\\geo_preprocess\\src\\main\\resources\\lib\\gdalwarp.exe";
+            //linux系统路径
+            String exePath = "gdalwarp";
 
             // 设置命令参数
             String[] command = {
@@ -88,9 +87,6 @@ public class ExeExecution {
             // 设置环境变量
 
             ProcessBuilder processBuilder = new ProcessBuilder(command);
-            Map<String, String> env = processBuilder.environment();
-            env.put("PROJ_LIB", "D:\\Program Files\\PostgreSQL\\13\\share\\contrib\\postgis-3.1\\proj");
-            // 创建进程并执行命令
 
             Process process = processBuilder.start();
 
