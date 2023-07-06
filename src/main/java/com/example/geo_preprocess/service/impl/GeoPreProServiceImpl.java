@@ -160,7 +160,9 @@ public class GeoPreProServiceImpl implements GeoPreProService {
 
         Dataset imageSet = gdal.Open(filePath);
         File file = new File(filePath);
-        String ouptPath = ExeExecution.doChangeFormat(filePath, outputPath, file.getName(), targetFormat, FormatEum.getSuffixValue(targetFormat), imageSet.getRasterCount());
+        int dotIndex = file.getName().lastIndexOf('.');
+        String fileName = file.getName().substring(0, dotIndex);
+        String ouptPath = ExeExecution.doChangeFormat(filePath, outputPath, fileName, targetFormat, FormatEum.getSuffixValue(targetFormat), imageSet.getRasterCount());
         imageSet.delete();
         Map<String, String> res = new HashMap<>();
         res.put("outputPath", ouptPath);
