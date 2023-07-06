@@ -283,6 +283,6 @@ public class GeoPreProServiceImpl implements GeoPreProService {
             reader.dispose();
         }
         input.close();
-        return "";
+        return outputFilePath;
     }
 }
