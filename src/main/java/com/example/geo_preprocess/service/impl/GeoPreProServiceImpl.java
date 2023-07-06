@@ -270,10 +270,10 @@ public class GeoPreProServiceImpl implements GeoPreProService {
             BufferedImage frame = reader.read(frameIndex);
 
             if (targetFormat.equals("PNG")) {
-                File outputFile = new File(outputFilePath + "frame_" + frameIndex + ".png");
+                File outputFile = new File(outputFilePath + "\\frame_" + frameIndex + ".png");
                 ImageIO.write(frame, "png", outputFile);
             } else {
-                File outputFile = new File(outputFilePath + "frame_" + frameIndex + ".jpg");
+                File outputFile = new File(outputFilePath + "\\frame_" + frameIndex + ".jpg");
                 ImageIO.write(frame, "jpeg", outputFile);
             }
         }
