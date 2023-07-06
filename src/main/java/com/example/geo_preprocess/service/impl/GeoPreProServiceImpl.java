@@ -14,6 +14,8 @@ import org.gdal.osr.SpatialReference;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -52,7 +54,7 @@ public class GeoPreProServiceImpl implements GeoPreProService {
         tiffMetaData.setModificationTime(new Date(modifiedTime));
         // 获取名称
         tiffMetaData.setImageName(file.getName());
-        Dataset imageSet = gdal.Open(filePath);
+        Dataset imageSet = gdal.Open(filePath, gdalconst.GA_ReadOnly);
         //获取空间仿射变换参数
         tiffMetaData.setAffineTransformation(imageSet.GetGeoTransform());
 
@@ -241,27 +243,46 @@ public class GeoPreProServiceImpl implements GeoPreProService {
      *
      * @param targetFormat 目标格式
      */
-    public static String gifChange(String inputpath, String outputFilePath, String targetFormat) {
-        try {
-            // 读取GIF文件
-            BufferedImage gifImage = ImageIO.read(new File(inputpath));
+    public static String gifChange(String inputpath, String outputFilePath, String targetFormat) throws IOException {
+        // 加载 GIF 图像
+        File gifFile = new File(inputpath);
+        ImageInputStream input = ImageIO.createImageInputStream(gifFile);
 
-            // 创建空白的目标图像
-            BufferedImage outputImage = new BufferedImage(gifImage.getWidth(), gifImage.getHeight(),
-                    BufferedImage.TYPE_INT_RGB);
-
-            // 将目标图像保存为PNG或JPEG
-            if (targetFormat.equals(FormatEum.PNG.getName())) {
-                ImageIO.write(outputImage, "png", new File(outputFilePath + ".png"));
-                return outputFilePath + ".png";
-            } else if (targetFormat.equals(FormatEum.JPEG.getName())) {
-                ImageIO.write(outputImage, "jpg", new File(outputFilePath + ".jpg"));
-                return outputFilePath + ".jpg";
+        // 获取 GIF 图像的 ImageReader
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+        ImageReader reader = null;
+        while (readers.hasNext()) {
+            reader = readers.next();
+            if (reader.getFormatName().equalsIgnoreCase("gif")) {
+                break;
             }
-            System.out.println("转换完成！");
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        // 读取 GIF 图像的每一帧并保存为 PNG 图像
+        if (reader != null) {
+            reader.setInput(input);
+        }
+        int numFrames = 0;
+        if (reader != null) {
+            numFrames = reader.getNumImages(true);
+        }
+        for (int frameIndex = 0; frameIndex < numFrames; frameIndex++) {
+            // 获取当前帧的图像数据
+            BufferedImage frame = reader.read(frameIndex);
+
+            if (targetFormat.equals("PNG")) {
+                File outputFile = new File(outputFilePath + "frame_" + frameIndex + ".png");
+                ImageIO.write(frame, "png", outputFile);
+            } else {
+                File outputFile = new File(outputFilePath + "frame_" + frameIndex + ".jpg");
+                ImageIO.write(frame, "jpeg", outputFile);
+            }
+        }
+
+        // 关闭 ImageInputStream 和 ImageReader
+        if (reader != null) {
+            reader.dispose();
+        }
+        input.close();
         return "";
     }
 }

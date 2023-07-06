@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,16 +102,15 @@ public class CommonController {
             @RequestParam("filePath") String filePath,
             @RequestParam("outputPath") String outputPath,
             @RequestParam("targetFormat") String targetFormat
-    ) {
+    ) throws IOException {
         File out = new File(outputPath);
         File input = new File(filePath);
         if (!out.exists()) {
             out.mkdir();
         }
 
-        if (GeoPreProServiceImpl.getFileExtension(input).equals(".gif")) {
+        if (GeoPreProServiceImpl.getFileExtension(input).equals("gif")) {
             //对于gif文件，只能保存为png或者jpg
-            outputPath = outputPath + input.getName();
             String oupath = GeoPreProServiceImpl.gifChange(filePath, outputPath, targetFormat);
             if (oupath.equals("")) {
                 return ResponseData.error("转换失败！");
